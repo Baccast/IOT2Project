@@ -15,9 +15,6 @@ B = 3950    # Beta coefficient of the thermistor (adjust as needed)
 temperature_Celsius = 0.0
 temperature_threshold = 0.0
 
-def toggle_alarm():
-    global alarm_on
-    alarm_on = not alarm_on
 
 # GPIO pin for the buzzer
 BUZZER_PIN = 23
@@ -46,6 +43,10 @@ def temperature_from_resistance(Rt):
     except ValueError:
         # Handle the case where math.log() receives an invalid argument
         return None
+
+def toggle_alarm():
+    global alarm_on
+    alarm_on = not alarm_on
 
 def update_temperature_and_threshold():
     global temperature_Celsius, temperature_threshold, alarm_on
