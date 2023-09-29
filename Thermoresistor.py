@@ -21,8 +21,6 @@ BUZZER_PIN = 23
 # Define the potentiometer reading range
 POT_MIN = 0    # Minimum ADC value for the potentiometer
 POT_MAX = 255  # Maximum ADC value for the potentiometer
-TEMP_MIN = -50 # Minimum temperature threshold (in Celsius)
-TEMP_MAX = 50  # Maximum temperature threshold (in Celsius)
 
 def init():
     ADC0832.setup()
@@ -67,11 +65,12 @@ def update_temperature_and_threshold():
             # Update the global temperature variable
             temperature_Celsius = temperature_C
 
-            # Map potentiometer value to temperature threshold, reversing it
-            temperature_threshold = TEMP_MAX - map_value(res_pot, POT_MIN, POT_MAX, TEMP_MIN, TEMP_MAX)
+            # Map potentiometer value to temperature threshold
+            # The center position corresponds to 0°C
+            temperature_threshold = map_value(res_pot, POT_MIN, POT_MAX, -50, 50)
 
-            # Ensure the threshold doesn't exceed the defined range
-            temperature_threshold = max(TEMP_MIN, min(TEMP_MAX, temperature_threshold))
+            # Ensure the threshold doesn't exceed the specified range
+            temperature_threshold = max(-50, min(50, temperature_threshold))
 
             # Update the GUI labels
             temperature_label.config(text=f'Temperature (Celsius): {temperature_C:.2f}°C\nTemperature (Fahrenheit): {temperature_F:.2f}°F')
