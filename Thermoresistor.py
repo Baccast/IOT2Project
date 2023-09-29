@@ -4,6 +4,7 @@ import time
 import math
 import tkinter as tk
 import threading
+import RPi.GPIO as GPIO  # Import the GPIO library
 
 # Constants for the thermistor characteristics
 R0 = 10000  # Resistance at a known temperature (in ohms)
@@ -15,11 +16,18 @@ temperature_Celsius = 0.0
 temperature_threshold = 0.0
 
 # Maximum resistance of the potentiometer corresponding to -50°C
-# This should be adjusted based on your specific potentiometer.
-max_pot_resistance = 10000.0  # Adjust this value as needed
+# Adjust this value as needed based on your potentiometer
+max_pot_resistance = 10000.0
+
+# GPIO pin for the buzzer
+BUZZER_PIN = 23
 
 def init():
     ADC0832.setup()
+    GPIO.setwarnings(False)
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(BUZZER_PIN, GPIO.OUT)
+    GPIO.output(BUZZER_PIN, GPIO.LOW)  # Turn off the buzzer initially
 
 def temperature_from_resistance(Rt):
     try:
@@ -54,8 +62,7 @@ def update_temperature_and_threshold():
             temperature_Celsius = temperature_C
 
             # Calculate temperature threshold from the potentiometer value
-            # Assuming the potentiometer range is from -50C to 50C
-            # Adjusting the calculation based on the maximum resistance
+            # Adjust the calculation based on the maximum resistance
             temperature_threshold = (Vr_pot * 100) - 50
 
             # Ensure the threshold doesn't exceed 50°C
@@ -65,6 +72,14 @@ def update_temperature_and_threshold():
             # Update the GUI labels
             temperature_label.config(text=f'Temperature (Celsius): {temperature_C:.2f}°C\nTemperature (Fahrenheit): {temperature_F:.2f}°F')
             threshold_label.config(text=f'Temperature Threshold: {temperature_threshold:.2f}°C')
+
+            # Check if temperature exceeds the threshold
+            if temperature_C > temperature_threshold:
+                # Turn on the buzzer
+                GPIO.output(BUZZER_PIN, GPIO.HIGH)
+            else:
+                # Turn off the buzzer
+                GPIO.output(BUZZER_PIN, GPIO.LOW)
 
         time.sleep(0.2)
 
