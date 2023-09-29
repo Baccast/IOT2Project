@@ -45,9 +45,13 @@ def temperature_from_resistance(Rt):
         # Handle the case where math.log() receives an invalid argument
         return None
 
-def toggle_alarm():
+def set_alarm_on():
     global alarm_on
-    alarm_on = not alarm_on
+    alarm_on = True
+
+def set_alarm_off():
+    global alarm_on
+    alarm_on = False
 
 def update_temperature_and_threshold():
     global temperature_Celsius, temperature_threshold, alarm_on
@@ -98,17 +102,23 @@ def main():
     root = tk.Tk()
     root.title("Thermistor Temperature Monitor")
 
-    # Create labels to display temperature and threshold
-    global temperature_label, threshold_label
+    # Create labels to display temperature, threshold, and alarm status
+    global temperature_label, threshold_label, alarm_status_label
     temperature_label = tk.Label(root, text="", font=("Helvetica", 16))
     temperature_label.pack(padx=20, pady=10)
 
     threshold_label = tk.Label(root, text="", font=("Helvetica", 16))
     threshold_label.pack(padx=20, pady=10)
 
-    # Create a button to toggle the alarm
-    alarm_button = tk.Button(root, text="Toggle Alarm", command=toggle_alarm)
-    alarm_button.pack()
+    alarm_status_label = tk.Label(root, text="", font=("Helvetica", 16))
+    alarm_status_label.pack(padx=20, pady=10)
+
+    # Create "On" and "Off" buttons for the alarm
+    alarm_on_button = tk.Button(root, text="Alarm On", command=set_alarm_on)
+    alarm_on_button.pack()
+
+    alarm_off_button = tk.Button(root, text="Alarm Off", command=set_alarm_off)
+    alarm_off_button.pack()
 
     # Create a button to exit the application
     exit_button = tk.Button(root, text="Exit", command=root.quit)
