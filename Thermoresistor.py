@@ -1,14 +1,51 @@
-# ...
+#!/usr/bin/env python
+import ADC0832
+import time
+import math
+import tkinter as tk
+import threading
+import RPi.GPIO as GPIO
+
+# Constants for the thermistor characteristics
+R0 = 10000  # Resistance at a known temperature (in ohms)
+T0 = 25     # Known temperature in Celsius (adjust as needed)
+B = 3950    # Beta coefficient of the thermistor (adjust as needed)
+
 # Global variables
 temperature_Celsius = 0.0
 temperature_threshold = 0.0
-alarm_on = False  # Initialize alarm to off
-
-# ...
 
 def toggle_alarm():
     global alarm_on
     alarm_on = not alarm_on
+
+# GPIO pin for the buzzer
+BUZZER_PIN = 23
+
+# Define the potentiometer reading range
+POT_MIN = 0    # Minimum ADC value for the potentiometer
+POT_MAX = 255  # Maximum ADC value for the potentiometer
+
+def init():
+    ADC0832.setup()
+    GPIO.setwarnings(False)
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(BUZZER_PIN, GPIO.OUT)
+    GPIO.output(BUZZER_PIN, GPIO.LOW)  # Turn off the buzzer initially
+
+def map_value(value, from_min, from_max, to_min, to_max):
+    # Map 'value' from the range [from_min, from_max] to [to_min, to_max]
+    return (value - from_min) * (to_max - to_min) / (from_max - from_min) + to_min
+
+def temperature_from_resistance(Rt):
+    try:
+        # Calculate temperature in Celsius using the Steinhart-Hart equation
+        inv_T = 1.0 / (T0 + 273.15) + (1.0 / B) * math.log(Rt / R0)
+        temperature_C = 1.0 / inv_T - 273.15
+        return temperature_C
+    except ValueError:
+        # Handle the case where math.log() receives an invalid argument
+        return None
 
 def update_temperature_and_threshold():
     global temperature_Celsius, temperature_threshold, alarm_on
@@ -51,8 +88,6 @@ def update_temperature_and_threshold():
                 GPIO.output(BUZZER_PIN, GPIO.LOW)
 
         time.sleep(0.2)
-
-# ...
 
 def main():
     init()
