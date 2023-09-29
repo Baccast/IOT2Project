@@ -3,6 +3,7 @@ import ADC0832
 import time
 import math
 import tkinter as tk
+import threading  # Import the threading module
 
 # Constants for the thermistor characteristics
 R0 = 10000  # Resistance at a known temperature (in ohms)
