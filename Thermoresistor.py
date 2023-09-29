@@ -18,22 +18,22 @@ temperature_threshold = 0.0
 # GPIO pin for the buzzer
 BUZZER_PIN = 23
 
-# Potentiometer calibration values
-# These values should be adjusted based on your potentiometer's characteristics
-pot_min_value = 30   # Minimum ADC reading when potentiometer is at -50°C
-pot_max_value = 225  # Maximum ADC reading when potentiometer is at 50°C
+# Define the potentiometer reading range
+POT_MIN = 0    # Minimum ADC value for the potentiometer
+POT_MAX = 255  # Maximum ADC value for the potentiometer
+TEMP_MIN = -50 # Minimum temperature threshold (in Celsius)
+TEMP_MAX = 50  # Maximum temperature threshold (in Celsius)
 
 def init():
     ADC0832.setup()
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(BUZZER_PIN, GPIO.OUT)
-    GPIO.output(BUZZER_PIN, GPIO.LOW)
+    GPIO.output(BUZZER_PIN, GPIO.LOW)  # Turn off the buzzer initially
 
-def map_potentiometer_to_temperature(pot_value):
-    # Map the potentiometer value to the desired temperature range
-    temperature_C = -50 + (pot_value - pot_min_value) / (pot_max_value - pot_min_value) * 100
-    return temperature_C
+def map_value(value, from_min, from_max, to_min, to_max):
+    # Map 'value' from the range [from_min, from_max] to [to_min, to_max]
+    return (value - from_min) * (to_max - to_min) / (from_max - from_min) + to_min
 
 def temperature_from_resistance(Rt):
     try:
@@ -67,12 +67,11 @@ def update_temperature_and_threshold():
             # Update the global temperature variable
             temperature_Celsius = temperature_C
 
-            # Map potentiometer value to temperature
-            temperature_threshold = map_potentiometer_to_temperature(res_pot)
+            # Map potentiometer value to temperature threshold
+            temperature_threshold = map_value(res_pot, POT_MIN, POT_MAX, TEMP_MIN, TEMP_MAX)
 
-            # Ensure the threshold doesn't exceed 50°C
-            if temperature_threshold > 50:
-                temperature_threshold = 50
+            # Ensure the threshold doesn't exceed the defined range
+            temperature_threshold = max(TEMP_MIN, min(TEMP_MAX, temperature_threshold))
 
             # Update the GUI labels
             temperature_label.config(text=f'Temperature (Celsius): {temperature_C:.2f}°C\nTemperature (Fahrenheit): {temperature_F:.2f}°F')
