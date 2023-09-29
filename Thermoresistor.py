@@ -67,8 +67,8 @@ def update_temperature_and_threshold():
             # Update the global temperature variable
             temperature_Celsius = temperature_C
 
-            # Map potentiometer value to temperature threshold
-            temperature_threshold = map_value(res_pot, POT_MIN, POT_MAX, TEMP_MIN, TEMP_MAX)
+            # Map potentiometer value to temperature threshold, reversing it
+            temperature_threshold = TEMP_MAX - map_value(res_pot, POT_MIN, POT_MAX, TEMP_MIN, TEMP_MAX)
 
             # Ensure the threshold doesn't exceed the defined range
             temperature_threshold = max(TEMP_MIN, min(TEMP_MAX, temperature_threshold))
