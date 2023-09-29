@@ -116,7 +116,8 @@ def main():
     threshold_label.pack(padx=20, pady=10)
 
     alarm_status_label = tk.Label(root, text="Alarm Status: Off", font=("Helvetica", 16))
-    alarm_status_label.pack(padx=20, pady=10, fg="red")  # Initialize as red
+    alarm_status_label.pack(padx=20, pady=10)
+    alarm_status_label.configure(fg="red")  # Initialize as red
 
     # Create "On" and "Off" buttons for the alarm
     alarm_on_button = tk.Button(root, text="Alarm On", command=set_alarm_on)
