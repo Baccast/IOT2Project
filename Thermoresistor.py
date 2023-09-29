@@ -90,8 +90,13 @@ def update_temperature_and_threshold():
                 # Turn on the buzzer
                 GPIO.output(BUZZER_PIN, GPIO.HIGH)
             else:
-                # Turn off the buzzer
+                # Turn off the buzzer and update alarm status label
                 GPIO.output(BUZZER_PIN, GPIO.LOW)
+                alarm_status_label.config(text="Alarm Status: Off", fg="red")
+
+            # Update alarm status label when alarm is on
+            if alarm_on:
+                alarm_status_label.config(text="Alarm Status: On", fg="green")
 
         time.sleep(0.2)
 
@@ -110,8 +115,8 @@ def main():
     threshold_label = tk.Label(root, text="", font=("Helvetica", 16))
     threshold_label.pack(padx=20, pady=10)
 
-    alarm_status_label = tk.Label(root, text="", font=("Helvetica", 16))
-    alarm_status_label.pack(padx=20, pady=10)
+    alarm_status_label = tk.Label(root, text="Alarm Status: Off", font=("Helvetica", 16))
+    alarm_status_label.pack(padx=20, pady=10, fg="red")  # Initialize as red
 
     # Create "On" and "Off" buttons for the alarm
     alarm_on_button = tk.Button(root, text="Alarm On", command=set_alarm_on)
