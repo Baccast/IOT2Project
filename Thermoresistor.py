@@ -66,8 +66,7 @@ def update_temperature_and_threshold():
             temperature_Celsius = temperature_C
 
             # Map potentiometer value to temperature threshold
-            # The center position corresponds to 0°C
-            temperature_threshold = map_value(res_pot, POT_MIN, POT_MAX, -50, 50)
+            temperature_threshold = map_value(res_pot, POT_MIN, POT_MAX, 50, -50)  # Inverted mapping
 
             # Ensure the threshold doesn't exceed the specified range
             temperature_threshold = max(-50, min(50, temperature_threshold))
