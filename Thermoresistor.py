@@ -100,6 +100,12 @@ def update_temperature_and_threshold():
 
         time.sleep(0.2)
 
+def cleanup():
+    # Turn off the buzzer
+    GPIO.output(BUZZER_PIN, GPIO.LOW)
+    # Clean up GPIO
+    GPIO.cleanup()
+
 def main():
     init()
 
@@ -127,13 +133,15 @@ def main():
     alarm_off_button.pack()
 
     # Create a button to exit the application
-    exit_button = tk.Button(root, text="Exit", command=root.quit)
+    exit_button = tk.Button(root, text="Exit", command=lambda: [root.quit(), cleanup()])  # Add cleanup on exit
     exit_button.pack()
 
     # Start the temperature update thread
     update_thread = threading.Thread(target=update_temperature_and_threshold)
     update_thread.daemon = True
     update_thread.start()
+
+    root.protocol("WM_DELETE_WINDOW", lambda: [root.quit(), cleanup()])  # Add cleanup on GUI close
 
     root.mainloop()
 
