@@ -14,7 +14,7 @@ B = 3950    # Beta coefficient of the thermistor (adjust as needed)
 # Global variables
 temperature_Celsius = 0.0
 temperature_threshold = 0.0
-
+alarm_on = False  # Initialize alarm to off
 
 # GPIO pin for the buzzer
 BUZZER_PIN = 23
@@ -24,6 +24,7 @@ POT_MIN = 0    # Minimum ADC value for the potentiometer
 POT_MAX = 255  # Maximum ADC value for the potentiometer
 
 def init():
+    global alarm_on  # Define alarm_on as global
     ADC0832.setup()
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
