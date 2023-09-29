@@ -4,7 +4,7 @@ import time
 import math
 import tkinter as tk
 import threading
-import RPi.GPIO as GPIO  # Import the GPIO library
+import RPi.GPIO as GPIO
 
 # Constants for the thermistor characteristics
 R0 = 10000  # Resistance at a known temperature (in ohms)
@@ -15,19 +15,25 @@ B = 3950    # Beta coefficient of the thermistor (adjust as needed)
 temperature_Celsius = 0.0
 temperature_threshold = 0.0
 
-# Maximum resistance of the potentiometer corresponding to -50°C
-# Adjust this value as needed based on your potentiometer
-max_pot_resistance = 10000.0
-
 # GPIO pin for the buzzer
 BUZZER_PIN = 23
+
+# Potentiometer calibration values
+# These values should be adjusted based on your potentiometer's characteristics
+pot_min_value = 30   # Minimum ADC reading when potentiometer is at -50°C
+pot_max_value = 225  # Maximum ADC reading when potentiometer is at 50°C
 
 def init():
     ADC0832.setup()
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(BUZZER_PIN, GPIO.OUT)
-    GPIO.output(BUZZER_PIN, GPIO.LOW)  # Turn off the buzzer initially
+    GPIO.output(BUZZER_PIN, GPIO.LOW)
+
+def map_potentiometer_to_temperature(pot_value):
+    # Map the potentiometer value to the desired temperature range
+    temperature_C = -50 + (pot_value - pot_min_value) / (pot_max_value - pot_min_value) * 100
+    return temperature_C
 
 def temperature_from_resistance(Rt):
     try:
@@ -61,9 +67,8 @@ def update_temperature_and_threshold():
             # Update the global temperature variable
             temperature_Celsius = temperature_C
 
-            # Calculate temperature threshold from the potentiometer value
-            # Adjust the calculation based on the maximum resistance
-            temperature_threshold = (Vr_pot * 100) - 50
+            # Map potentiometer value to temperature
+            temperature_threshold = map_potentiometer_to_temperature(res_pot)
 
             # Ensure the threshold doesn't exceed 50°C
             if temperature_threshold > 50:
