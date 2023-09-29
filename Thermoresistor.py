@@ -1,50 +1,17 @@
-#!/usr/bin/env python
-import ADC0832
-import time
-import math
-import tkinter as tk
-import threading
-import RPi.GPIO as GPIO
-
-# Constants for the thermistor characteristics
-R0 = 10000  # Resistance at a known temperature (in ohms)
-T0 = 25     # Known temperature in Celsius (adjust as needed)
-B = 3950    # Beta coefficient of the thermistor (adjust as needed)
-
+# ...
 # Global variables
 temperature_Celsius = 0.0
 temperature_threshold = 0.0
+alarm_on = False  # Initialize alarm to off
 
-# GPIO pin for the buzzer
-BUZZER_PIN = 23
+# ...
 
-# Define the potentiometer reading range
-POT_MIN = 0    # Minimum ADC value for the potentiometer
-POT_MAX = 255  # Maximum ADC value for the potentiometer
-
-def init():
-    ADC0832.setup()
-    GPIO.setwarnings(False)
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(BUZZER_PIN, GPIO.OUT)
-    GPIO.output(BUZZER_PIN, GPIO.LOW)  # Turn off the buzzer initially
-
-def map_value(value, from_min, from_max, to_min, to_max):
-    # Map 'value' from the range [from_min, from_max] to [to_min, to_max]
-    return (value - from_min) * (to_max - to_min) / (from_max - from_min) + to_min
-
-def temperature_from_resistance(Rt):
-    try:
-        # Calculate temperature in Celsius using the Steinhart-Hart equation
-        inv_T = 1.0 / (T0 + 273.15) + (1.0 / B) * math.log(Rt / R0)
-        temperature_C = 1.0 / inv_T - 273.15
-        return temperature_C
-    except ValueError:
-        # Handle the case where math.log() receives an invalid argument
-        return None
+def toggle_alarm():
+    global alarm_on
+    alarm_on = not alarm_on
 
 def update_temperature_and_threshold():
-    global temperature_Celsius, temperature_threshold
+    global temperature_Celsius, temperature_threshold, alarm_on
 
     while True:
         # Read temperature and potentiometer values from ADC channels
@@ -75,8 +42,8 @@ def update_temperature_and_threshold():
             temperature_label.config(text=f'Temperature (Celsius): {temperature_C:.2f}°C\nTemperature (Fahrenheit): {temperature_F:.2f}°F')
             threshold_label.config(text=f'Temperature Threshold: {temperature_threshold:.2f}°C')
 
-            # Check if temperature exceeds the threshold
-            if temperature_C > temperature_threshold:
+            # Check if temperature exceeds the threshold and alarm is on
+            if alarm_on and temperature_C > temperature_threshold:
                 # Turn on the buzzer
                 GPIO.output(BUZZER_PIN, GPIO.HIGH)
             else:
@@ -84,6 +51,8 @@ def update_temperature_and_threshold():
                 GPIO.output(BUZZER_PIN, GPIO.LOW)
 
         time.sleep(0.2)
+
+# ...
 
 def main():
     init()
@@ -99,6 +68,10 @@ def main():
 
     threshold_label = tk.Label(root, text="", font=("Helvetica", 16))
     threshold_label.pack(padx=20, pady=10)
+
+    # Create a button to toggle the alarm
+    alarm_button = tk.Button(root, text="Toggle Alarm", command=toggle_alarm)
+    alarm_button.pack()
 
     # Create a button to exit the application
     exit_button = tk.Button(root, text="Exit", command=root.quit)
