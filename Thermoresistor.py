@@ -14,10 +14,6 @@ B = 3950    # Beta coefficient of the thermistor (adjust as needed)
 temperature_Celsius = 0.0
 temperature_threshold = 0.0
 
-# Maximum resistance of the potentiometer corresponding to -50°C
-# This should be adjusted based on your specific potentiometer.
-max_pot_resistance = 10000.0  # Adjust this value as needed
-
 def init():
     ADC0832.setup()
 
@@ -54,13 +50,15 @@ def update_temperature_and_threshold():
             temperature_Celsius = temperature_C
 
             # Calculate temperature threshold from the potentiometer value
-            # Assuming the potentiometer range is from -50C to 50C
+            # Assuming the potentiometer range is from -255C to 255C
             # Adjusting the calculation based on the maximum resistance
-            temperature_threshold = (Vr_pot * 100) - 50
+            temperature_threshold = (Vr_pot * 510) - 255
 
-            # Ensure the threshold doesn't exceed 50°C
-            if temperature_threshold > 50:
-                temperature_threshold = 50
+            # Ensure the threshold doesn't exceed 255°C or go below -255°C
+            if temperature_threshold > 255:
+                temperature_threshold = 255
+            elif temperature_threshold < -255:
+                temperature_threshold = -255
 
             # Update the GUI labels
             temperature_label.config(text=f'Temperature (Celsius): {temperature_C:.2f}°C\nTemperature (Fahrenheit): {temperature_F:.2f}°F')
