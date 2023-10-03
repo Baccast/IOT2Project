@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import ADC0832
+import ADC2
 import time
 import math
 import tkinter as tk
@@ -100,6 +101,20 @@ def update_temperature_and_threshold():
 
         time.sleep(0.2)
 
+def update_light_status():
+    global light_status_label
+
+    while True:
+        res_light = ADC2.getADC(0)  # Photoresistor connected to channel 0
+
+        # Check the light level and update the label
+        if res_light < 128:
+            light_status_label.config(text="Light", fg="green")
+        else:
+            light_status_label.config(text="Dark", fg="red")
+
+        time.sleep(0.2)
+
 def cleanup():
     # Turn off the buzzer
     GPIO.output(BUZZER_PIN, GPIO.LOW)
@@ -111,10 +126,10 @@ def main():
 
     # Create a Tkinter window
     root = tk.Tk()
-    root.title("Thermistor Temperature Monitor")
+    root.title("Thermistor and Photoresistor Monitor")
 
     # Create labels to display temperature, threshold, and alarm status
-    global temperature_label, threshold_label, alarm_status_label
+    global temperature_label, threshold_label, alarm_status_label, light_status_label
     temperature_label = tk.Label(root, text="", font=("Helvetica", 16))
     temperature_label.pack(padx=20, pady=10)
 
@@ -124,6 +139,10 @@ def main():
     alarm_status_label = tk.Label(root, text="Alarm Status: Off", font=("Helvetica", 16))
     alarm_status_label.pack(padx=20, pady=10)
     alarm_status_label.configure(fg="red")  # Initialize as red
+
+    # Create a label to display light status
+    light_status_label = tk.Label(root, text="", font=("Helvetica", 16))
+    light_status_label.pack(padx=20, pady=10)
 
     # Create "On" and "Off" buttons for the alarm
     alarm_on_button = tk.Button(root, text="Alarm On", command=set_alarm_on)
@@ -140,6 +159,11 @@ def main():
     update_thread = threading.Thread(target=update_temperature_and_threshold)
     update_thread.daemon = True
     update_thread.start()
+
+    # Start the light status update thread
+    light_thread = threading.Thread(target=update_light_status)
+    light_thread.daemon = True
+    light_thread.start()
 
     root.protocol("WM_DELETE_WINDOW", lambda: [root.quit(), cleanup()])  # Add cleanup on GUI close
 
