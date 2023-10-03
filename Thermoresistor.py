@@ -109,9 +109,13 @@ def update_light_status():
 
         # Check the light level and update the label
         if res_light < 128:
-            light_status_label.config(text="Light", fg="green")
+            light_status = "Light"
+            label_color = "green"
         else:
-            light_status_label.config(text="Dark", fg="red")
+            light_status = "Dark"
+            label_color = "red"
+
+        light_status_label.config(text=f'Light Status: {light_status}', fg=label_color)
 
         time.sleep(0.2)
 
