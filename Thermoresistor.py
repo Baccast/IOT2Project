@@ -115,6 +115,7 @@ def update_light_status():
             light_status = "Dark"
             label_color = "red"
 
+        # Update the GUI label with light status and color
         light_status_label.config(text=f'Light Status: {light_status}', fg=label_color)
 
         time.sleep(0.2)
