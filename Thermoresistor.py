@@ -27,6 +27,10 @@ BLUE_BUTTON_PIN = 4
 POT_MIN = 0    # Minimum ADC value for the potentiometer
 POT_MAX = 255  # Maximum ADC value for the potentiometer
 
+def init_buttons():
+    GPIO.setup(RED_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Red button with pull-up resistor
+    GPIO.setup(BLUE_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Blue button with pull-up resistor
+
 def init():
     global alarm_on  # Define alarm_on as global
     ADC0832.setup()
@@ -37,8 +41,6 @@ def init():
     GPIO.setup(LED_PIN, GPIO.OUT)  # Set up LED pin as an output
     GPIO.output(BUZZER_PIN, GPIO.LOW)  # Turn off the buzzer initially
     GPIO.output(LED_PIN, GPIO.LOW)  # Turn off the LED initially
-    GPIO.setup(RED_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Red button with pull-up resistor
-    GPIO.setup(BLUE_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Blue button with pull-up resistor
 
 def map_value(value, from_min, from_max, to_min, to_max):
     # Map 'value' from the range [from_min, from_max] to [to_min, to_max]
