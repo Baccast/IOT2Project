@@ -27,10 +27,6 @@ BLUE_BUTTON_PIN = 4
 POT_MIN = 0    # Minimum ADC value for the potentiometer
 POT_MAX = 255  # Maximum ADC value for the potentiometer
 
-def init_buttons():
-    GPIO.setup(RED_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Red button with pull-up resistor
-    GPIO.setup(BLUE_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Blue button with pull-up resistor
-
 def init():
     global alarm_on  # Define alarm_on as global
     ADC0832.setup()
@@ -41,6 +37,7 @@ def init():
     GPIO.setup(LED_PIN, GPIO.OUT)  # Set up LED pin as an output
     GPIO.output(BUZZER_PIN, GPIO.LOW)  # Turn off the buzzer initially
     GPIO.output(LED_PIN, GPIO.LOW)  # Turn off the LED initially
+    
 
 def map_value(value, from_min, from_max, to_min, to_max):
     # Map 'value' from the range [from_min, from_max] to [to_min, to_max]
@@ -170,19 +167,9 @@ def main():
     alarm_off_button = tk.Button(root, text="Alarm Off", command=set_alarm_off)
     alarm_off_button.pack()
 
-    # Create buttons to control the alarm
-    red_button = tk.Button(root, text="Red Button (Turn Off Alarm)", command=set_alarm_off)
-    red_button.pack()
-
-    blue_button = tk.Button(root, text="Blue Button (Turn On Alarm)", command=set_alarm_on)
-    blue_button.pack()
-
     # Create a button to exit the application
     exit_button = tk.Button(root, text="Exit", command=lambda: [root.quit(), cleanup()])  # Add cleanup on exit
     exit_button.pack()
-
-    # Initialize buttons
-    init_buttons()
 
     # Start the temperature update thread
     update_thread = threading.Thread(target=update_temperature_and_threshold)
@@ -196,13 +183,7 @@ def main():
 
     root.protocol("WM_DELETE_WINDOW", lambda: [root.quit(), cleanup()])  # Add cleanup on GUI close
 
-    # Handle button presses
-    while True:
-        if not GPIO.input(RED_BUTTON_PIN):
-            set_alarm_off()
-        if not GPIO.input(BLUE_BUTTON_PIN):
-            set_alarm_on()
-        time.sleep(0.1)
+    root.mainloop()
 
 if __name__ == '__main__':
     main()
