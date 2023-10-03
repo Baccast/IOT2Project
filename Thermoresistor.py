@@ -31,6 +31,7 @@ def init_buttons():
     GPIO.setup(RED_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Red button with pull-up resistor
     GPIO.setup(BLUE_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Blue button with pull-up resistor
 
+
 def init():
     global alarm_on  # Define alarm_on as global
     ADC0832.setup()
