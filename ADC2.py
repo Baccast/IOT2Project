@@ -7,7 +7,7 @@ import RPi.GPIO as GPIO
 PIN_CLK = 16
 PIN_DO  = 26
 PIN_DI  = 19
-PIN_CS  = 13
+PIN_CS  = 6
 
 def setup():
     GPIO.setwarnings(False)
