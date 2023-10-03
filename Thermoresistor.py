@@ -25,17 +25,13 @@ POT_MIN = 0    # Minimum ADC value for the potentiometer
 POT_MAX = 255  # Maximum ADC value for the potentiometer
 
 def init():
+    global alarm_on  # Define alarm_on as global
+    ADC0832.setup()
+    ADC2.setup()
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
-    
-    # set up the SPI interface pins
-    GPIO.setup(PIN_DI, GPIO.OUT)
-    GPIO.setup(PIN_DO, GPIO.IN)
-    GPIO.setup(PIN_CLK, GPIO.OUT)
-    GPIO.setup(PIN_CS, GPIO.OUT)
-
-    # Ensure that PIN_CS is initially set to high
-    GPIO.output(PIN_CS, True)
+    GPIO.setup(BUZZER_PIN, GPIO.OUT)
+    GPIO.output(BUZZER_PIN, GPIO.LOW)  # Turn off the buzzer initially
 
 def map_value(value, from_min, from_max, to_min, to_max):
     # Map 'value' from the range [from_min, from_max] to [to_min, to_max]
