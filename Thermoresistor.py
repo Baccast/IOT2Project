@@ -19,6 +19,7 @@ alarm_on = False  # Initialize alarm to off
 
 # GPIO pin for the buzzer
 BUZZER_PIN = 23
+LED_PIN = 21
 
 # Define the potentiometer reading range
 POT_MIN = 0    # Minimum ADC value for the potentiometer
@@ -31,7 +32,9 @@ def init():
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(BUZZER_PIN, GPIO.OUT)
+    GPIO.setup(LED_PIN, GPIO.OUT)  # Set up LED pin as an output
     GPIO.output(BUZZER_PIN, GPIO.LOW)  # Turn off the buzzer initially
+    GPIO.output(LED_PIN, GPIO.LOW)  # Turn off the LED initially
 
 def map_value(value, from_min, from_max, to_min, to_max):
     # Map 'value' from the range [from_min, from_max] to [to_min, to_max]
@@ -112,10 +115,14 @@ def update_light_status():
         if res_light < 128:
             light_status = "Dark"
             label_color = "red"
+            # Turn on the LED when it's dark
+            GPIO.output(LED_PIN, GPIO.HIGH)
         else:
             light_status = "Light"
             label_color = "green"
-            
+            # Turn off the LED when it's light
+            GPIO.output(LED_PIN, GPIO.LOW)
+
         # Update the GUI label with light status and color
         light_status_label.config(text=f'Light Status: {light_status}', fg=label_color)
 
