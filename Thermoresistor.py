@@ -35,10 +35,19 @@ def init():
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(BUZZER_PIN, GPIO.OUT)
     GPIO.setup(LED_PIN, GPIO.OUT)  # Set up LED pin as an output
+    GPIO.setup(12, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # GPIO 12 (red button) as input with pull-up resistor
+    GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_UP)   # GPIO 4 (blue button) as input with pull-up resistor
     GPIO.output(BUZZER_PIN, GPIO.LOW)  # Turn off the buzzer initially
     GPIO.output(LED_PIN, GPIO.LOW)  # Turn off the LED initially
-    
 
+def red_button_pressed(channel):
+    print("Red button pressed.")
+    set_alarm_off()  # Turn off the alarm
+
+def blue_button_pressed(channel):
+    print("Blue button pressed.")
+    set_alarm_on()  # Turn on the alarm
+    
 def map_value(value, from_min, from_max, to_min, to_max):
     # Map 'value' from the range [from_min, from_max] to [to_min, to_max]
     return (value - from_min) * (to_max - to_min) / (from_max - from_min) + to_min
@@ -180,6 +189,12 @@ def main():
     light_thread = threading.Thread(target=update_light_status)
     light_thread.daemon = True
     light_thread.start()
+
+        # Add event detection for the red button (GPIO 12)
+    GPIO.add_event_detect(12, GPIO.FALLING, callback=red_button_pressed, bouncetime=300)
+
+    # Add event detection for the blue button (GPIO 4)
+    GPIO.add_event_detect(4, GPIO.FALLING, callback=blue_button_pressed, bouncetime=300)
 
     root.protocol("WM_DELETE_WINDOW", lambda: [root.quit(), cleanup()])  # Add cleanup on GUI close
 
