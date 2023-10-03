@@ -3,7 +3,6 @@ import ADC0832
 import ADC2
 import time
 import math
-import tkinter as tk
 import threading
 import RPi.GPIO as GPIO
 
@@ -35,8 +34,8 @@ def init():
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(BUZZER_PIN, GPIO.OUT)
     GPIO.setup(LED_PIN, GPIO.OUT)  # Set up LED pin as an output
-    GPIO.setup(12, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # GPIO 12 (red button) as input with pull-up resistor
-    GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_UP)   # GPIO 4 (blue button) as input with pull-up resistor
+    GPIO.setup(RED_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Red button as input with pull-up resistor
+    GPIO.setup(BLUE_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Blue button as input with pull-up resistor
     GPIO.output(BUZZER_PIN, GPIO.LOW)  # Turn off the buzzer initially
     GPIO.output(LED_PIN, GPIO.LOW)  # Turn off the LED initially
 
@@ -47,7 +46,7 @@ def red_button_pressed(channel):
 def blue_button_pressed(channel):
     print("Blue button pressed.")
     set_alarm_on()  # Turn on the alarm
-    
+
 def map_value(value, from_min, from_max, to_min, to_max):
     # Map 'value' from the range [from_min, from_max] to [to_min, to_max]
     return (value - from_min) * (to_max - to_min) / (from_max - from_min) + to_min
@@ -98,47 +97,28 @@ def update_temperature_and_threshold():
             # Ensure the threshold doesn't exceed the specified range
             temperature_threshold = max(-50, min(50, temperature_threshold))
 
-            # Update the GUI labels
-            temperature_label.config(text=f'Temperature (Celsius): {temperature_C:.2f}°C\nTemperature (Fahrenheit): {temperature_F:.2f}°F')
-            threshold_label.config(text=f'Temperature Threshold: {temperature_threshold:.2f}°C')
+            print(f'Temperature (Celsius): {temperature_C:.2f}°C')
+            print(f'Temperature (Fahrenheit): {temperature_F:.2f}°F')
 
             # Check if temperature exceeds the threshold and alarm is on
             if alarm_on and temperature_C > temperature_threshold:
                 # Turn on the buzzer
                 GPIO.output(BUZZER_PIN, GPIO.HIGH)
             else:
-                # Turn off the buzzer and update alarm status label
+                # Turn off the buzzer
                 GPIO.output(BUZZER_PIN, GPIO.LOW)
-                alarm_status_label.config(text="Alarm Status: Off", fg="red")
 
-            # Update alarm status label when alarm is on
+            # Update alarm status when alarm is on
             if alarm_on:
-                alarm_status_label.config(text="Alarm Status: On", fg="green")
+                alarm_status = "On"
+                alarm_status_color = "green"
+            else:
+                alarm_status = "Off"
+                alarm_status_color = "red"
+            print(f'Alarm Status: {alarm_status}')
+            print(f'Light Status: {"Dark" if GPIO.input(LED_PIN) else "Light"}')
 
-        time.sleep(0.2)
-
-def update_light_status():
-    global light_status_label
-
-    while True:
-        res_light = ADC2.getADC(0)  # Photoresistor connected to channel 0
-
-        # Check the light level and update the label
-        if res_light < 128:
-            light_status = "Dark"
-            label_color = "red"
-            # Turn on the LED when it's dark
-            GPIO.output(LED_PIN, GPIO.HIGH)
-        else:
-            light_status = "Light"
-            label_color = "green"
-            # Turn off the LED when it's light
-            GPIO.output(LED_PIN, GPIO.LOW)
-
-        # Update the GUI label with light status and color
-        light_status_label.config(text=f'Light Status: {light_status}', fg=label_color)
-
-        time.sleep(0.2)
+        time.sleep(15)  # Update temperature every 15 seconds
 
 def cleanup():
     # Turn off the buzzer
@@ -149,56 +129,22 @@ def cleanup():
 def main():
     init()
 
-    # Create a Tkinter window
-    root = tk.Tk()
-    root.title("Thermistor and Photoresistor Monitor")
-
-    # Create labels to display temperature, threshold, and alarm status
-    global temperature_label, threshold_label, alarm_status_label, light_status_label
-    temperature_label = tk.Label(root, text="", font=("Helvetica", 16))
-    temperature_label.pack(padx=20, pady=10)
-
-    threshold_label = tk.Label(root, text="", font=("Helvetica", 16))
-    threshold_label.pack(padx=20, pady=10)
-
-    alarm_status_label = tk.Label(root, text="Alarm Status: Off", font=("Helvetica", 16))
-    alarm_status_label.pack(padx=20, pady=10)
-    alarm_status_label.configure(fg="red")  # Initialize as red
-
-    # Create a label to display light status
-    light_status_label = tk.Label(root, text="", font=("Helvetica", 16))
-    light_status_label.pack(padx=20, pady=10)
-
-    # Create "On" and "Off" buttons for the alarm
-    alarm_on_button = tk.Button(root, text="Alarm On", command=set_alarm_on)
-    alarm_on_button.pack()
-
-    alarm_off_button = tk.Button(root, text="Alarm Off", command=set_alarm_off)
-    alarm_off_button.pack()
-
-    # Create a button to exit the application
-    exit_button = tk.Button(root, text="Exit", command=lambda: [root.quit(), cleanup()])  # Add cleanup on exit
-    exit_button.pack()
-
     # Start the temperature update thread
     update_thread = threading.Thread(target=update_temperature_and_threshold)
     update_thread.daemon = True
     update_thread.start()
 
-    # Start the light status update thread
-    light_thread = threading.Thread(target=update_light_status)
-    light_thread.daemon = True
-    light_thread.start()
-
-        # Add event detection for the red button (GPIO 12)
-    GPIO.add_event_detect(12, GPIO.FALLING, callback=red_button_pressed, bouncetime=300)
+    # Add event detection for the red button (GPIO 12)
+    GPIO.add_event_detect(RED_BUTTON_PIN, GPIO.FALLING, callback=red_button_pressed, bouncetime=300)
 
     # Add event detection for the blue button (GPIO 4)
-    GPIO.add_event_detect(4, GPIO.FALLING, callback=blue_button_pressed, bouncetime=300)
+    GPIO.add_event_detect(BLUE_BUTTON_PIN, GPIO.FALLING, callback=blue_button_pressed, bouncetime=300)
 
-    root.protocol("WM_DELETE_WINDOW", lambda: [root.quit(), cleanup()])  # Add cleanup on GUI close
-
-    root.mainloop()
+    try:
+        while True:
+            pass
+    except KeyboardInterrupt:
+        cleanup()
 
 if __name__ == '__main__':
     main()

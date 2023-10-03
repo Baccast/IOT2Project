@@ -1,83 +1,204 @@
-import tkinter as tk
-import ADC0832  # Import the ADC0832 module
+#!/usr/bin/env python
+import ADC0832
+import ADC2
 import time
+import math
+import tkinter as tk
+import threading
+import RPi.GPIO as GPIO
 
-class RoomGUI:
-    def __init__(self, master):
-        self.master = master
-        master.title("Room Status")
-        self.alarm_status = False
+# Constants for the thermistor characteristics
+R0 = 10000  # Resistance at a known temperature (in ohms)
+T0 = 25     # Known temperature in Celsius (adjust as needed)
+B = 3950    # Beta coefficient of the thermistor (adjust as needed)
 
-        # Light status label
-        self.light_label = tk.Label(master, text="Light: Unknown")
-        self.light_label.pack()
+# Global variables
+temperature_Celsius = 0.0
+temperature_threshold = 0.0
+alarm_on = False  # Initialize alarm to off
 
-        # Temperature label
-        self.temp_label = tk.Label(master, text="Temperature: Unknown")
-        self.temp_label.pack()
+# GPIO pin for the buzzer
+BUZZER_PIN = 23
+LED_PIN = 21
+RED_BUTTON_PIN = 12
+BLUE_BUTTON_PIN = 4
 
-        # Temperature threshold entry
-        self.temp_entry_label = tk.Label(master, text="Temperature Threshold:")
-        self.temp_entry_label.pack()
-        self.temp_entry = tk.Entry(master)
-        self.temp_entry.pack()
+# Define the potentiometer reading range
+POT_MIN = 0    # Minimum ADC value for the potentiometer
+POT_MAX = 255  # Maximum ADC value for the potentiometer
 
-        # Alarm status label
-        self.alarm_label = tk.Label(master, text="Alarm: Off", fg="red")
-        self.alarm_label.pack()
+def init():
+    global alarm_on  # Define alarm_on as global
+    ADC0832.setup()
+    ADC2.setup()
+    GPIO.setwarnings(False)
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(BUZZER_PIN, GPIO.OUT)
+    GPIO.setup(LED_PIN, GPIO.OUT)  # Set up LED pin as an output
+    GPIO.setup(12, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # GPIO 12 (red button) as input with pull-up resistor
+    GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_UP)   # GPIO 4 (blue button) as input with pull-up resistor
+    GPIO.output(BUZZER_PIN, GPIO.LOW)  # Turn off the buzzer initially
+    GPIO.output(LED_PIN, GPIO.LOW)  # Turn off the LED initially
 
-        # Alarm button
-        self.alarm_button = tk.Button(master, text="Turn On Alarm", command=self.toggle_alarm)
-        self.alarm_button.pack()
+def red_button_pressed(channel):
+    print("Red button pressed.")
+    set_alarm_off()  # Turn off the alarm
 
-        # Submit button
-        self.submit_button = tk.Button(master, text="Submit", command=self.submit)
-        self.submit_button.pack()
+def blue_button_pressed(channel):
+    print("Blue button pressed.")
+    set_alarm_on()  # Turn on the alarm
+    
+def map_value(value, from_min, from_max, to_min, to_max):
+    # Map 'value' from the range [from_min, from_max] to [to_min, to_max]
+    return (value - from_min) * (to_max - to_min) / (from_max - from_min) + to_min
 
-    def submit(self):
-        # Get temperature threshold from entry widget
-        temp_threshold = self.temp_entry.get()
+def temperature_from_resistance(Rt):
+    try:
+        # Calculate temperature in Celsius using the Steinhart-Hart equation
+        inv_T = 1.0 / (T0 + 273.15) + (1.0 / B) * math.log(Rt / R0)
+        temperature_C = 1.0 / inv_T - 273.15
+        return temperature_C
+    except ValueError:
+        # Handle the case where math.log() receives an invalid argument
+        return None
 
-        # Get current temperature
-        res = ADC0832.getADC(0)
-        Vr = 3.3 * float(res) / 255
-        Rt = 10000 * Vr / (3.3 - Vr)
-        Cel = Rt / 100 + 16.5
-        Fah = Cel * 1.8 + 32
+def set_alarm_on():
+    global alarm_on
+    alarm_on = True
 
-        # Update light status label accordingly
-        if Cel > float(temp_threshold):
-            self.light_label.config(text=f"Light: Off, Temperature Threshold: {temp_threshold}")
+def set_alarm_off():
+    global alarm_on
+    alarm_on = False
+
+def update_temperature_and_threshold():
+    global temperature_Celsius, temperature_threshold, alarm_on
+
+    while True:
+        # Read temperature and potentiometer values from ADC channels
+        res_temp = ADC0832.getADC(0)  # Temperature sensor connected to channel 0
+        res_pot = ADC0832.getADC(1)   # Potentiometer connected to channel 1
+
+        Vr_temp = 3.3 * float(res_temp) / 255
+        Vr_pot = 3.3 * float(res_pot) / 255
+
+        Rt_temp = 10000 * Vr_temp / (3.3 - Vr_temp)
+        
+        # Calculate temperature in Celsius
+        temperature_C = temperature_from_resistance(Rt_temp)
+        
+        if temperature_C is not None:
+            temperature_F = (temperature_C * 9/5) + 32  # Convert to Fahrenheit
+
+            # Update the global temperature variable
+            temperature_Celsius = temperature_C
+
+            # Map potentiometer value to temperature threshold
+            temperature_threshold = map_value(res_pot, POT_MIN, POT_MAX, 50, -50)  # Inverted mapping
+
+            # Ensure the threshold doesn't exceed the specified range
+            temperature_threshold = max(-50, min(50, temperature_threshold))
+
+            # Update the GUI labels
+            temperature_label.config(text=f'Temperature (Celsius): {temperature_C:.2f}°C\nTemperature (Fahrenheit): {temperature_F:.2f}°F')
+            threshold_label.config(text=f'Temperature Threshold: {temperature_threshold:.2f}°C')
+
+            # Check if temperature exceeds the threshold and alarm is on
+            if alarm_on and temperature_C > temperature_threshold:
+                # Turn on the buzzer
+                GPIO.output(BUZZER_PIN, GPIO.HIGH)
+            else:
+                # Turn off the buzzer and update alarm status label
+                GPIO.output(BUZZER_PIN, GPIO.LOW)
+                alarm_status_label.config(text="Alarm Status: Off", fg="red")
+
+            # Update alarm status label when alarm is on
+            if alarm_on:
+                alarm_status_label.config(text="Alarm Status: On", fg="green")
+
+        time.sleep(0.2)
+
+def update_light_status():
+    global light_status_label
+
+    while True:
+        res_light = ADC2.getADC(0)  # Photoresistor connected to channel 0
+
+        # Check the light level and update the label
+        if res_light < 128:
+            light_status = "Dark"
+            label_color = "red"
+            # Turn on the LED when it's dark
+            GPIO.output(LED_PIN, GPIO.HIGH)
         else:
-            self.light_label.config(text=f"Light: On, Temperature Threshold: {temp_threshold}")
+            light_status = "Light"
+            label_color = "green"
+            # Turn off the LED when it's light
+            GPIO.output(LED_PIN, GPIO.LOW)
 
-        # Update temperature label
-        self.temp_label.config(text=f"Temperature: {Cel:.2f} C / {Fah:.2f} F")
+        # Update the GUI label with light status and color
+        light_status_label.config(text=f'Light Status: {light_status}', fg=label_color)
 
-    def toggle_alarm(self):
-        if not self.alarm_status:
-            self.alarm_label.config(text="Alarm: On", fg="green")
-            self.alarm_button.config(text="Turn Off Alarm")
-            self.alarm_status = True
-        else:
-            self.alarm_label.config(text="Alarm: Off", fg="red")
-            self.alarm_button.config(text="Turn On Alarm")
-            self.alarm_status = False
+        time.sleep(0.2)
+
+def cleanup():
+    # Turn off the buzzer
+    GPIO.output(BUZZER_PIN, GPIO.LOW)
+    # Clean up GPIO
+    GPIO.cleanup()
 
 def main():
-    ADC0832.setup()  # Initialize the ADC0832
+    init()
+
+    # Create a Tkinter window
     root = tk.Tk()
-    room_gui = RoomGUI(root)
+    root.title("Thermistor and Photoresistor Monitor")
+
+    # Create labels to display temperature, threshold, and alarm status
+    global temperature_label, threshold_label, alarm_status_label, light_status_label
+    temperature_label = tk.Label(root, text="", font=("Helvetica", 16))
+    temperature_label.pack(padx=20, pady=10)
+
+    threshold_label = tk.Label(root, text="", font=("Helvetica", 16))
+    threshold_label.pack(padx=20, pady=10)
+
+    alarm_status_label = tk.Label(root, text="Alarm Status: Off", font=("Helvetica", 16))
+    alarm_status_label.pack(padx=20, pady=10)
+    alarm_status_label.configure(fg="red")  # Initialize as red
+
+    # Create a label to display light status
+    light_status_label = tk.Label(root, text="", font=("Helvetica", 16))
+    light_status_label.pack(padx=20, pady=10)
+
+    # Create "On" and "Off" buttons for the alarm
+    alarm_on_button = tk.Button(root, text="Alarm On", command=set_alarm_on)
+    alarm_on_button.pack()
+
+    alarm_off_button = tk.Button(root, text="Alarm Off", command=set_alarm_off)
+    alarm_off_button.pack()
+
+    # Create a button to exit the application
+    exit_button = tk.Button(root, text="Exit", command=lambda: [root.quit(), cleanup()])  # Add cleanup on exit
+    exit_button.pack()
+
+    # Start the temperature update thread
+    update_thread = threading.Thread(target=update_temperature_and_threshold)
+    update_thread.daemon = True
+    update_thread.start()
+
+    # Start the light status update thread
+    light_thread = threading.Thread(target=update_light_status)
+    light_thread.daemon = True
+    light_thread.start()
+
+        # Add event detection for the red button (GPIO 12)
+    GPIO.add_event_detect(12, GPIO.FALLING, callback=red_button_pressed, bouncetime=300)
+
+    # Add event detection for the blue button (GPIO 4)
+    GPIO.add_event_detect(4, GPIO.FALLING, callback=blue_button_pressed, bouncetime=300)
+
+    root.protocol("WM_DELETE_WINDOW", lambda: [root.quit(), cleanup()])  # Add cleanup on GUI close
+
     root.mainloop()
-    ADC0832.destroy()
-    res = ADC0832.getADC(0)
-    Vr = 3.3 * float(res) / 255
-    Rt = 10000 * Vr / (3.3 - Vr)
-    Cel = Rt / 100 + 16.5
-    Fah = Cel * 1.8 + 32
 
-    print(f"Temperature: {Cel:.2f} C / {Fah:.2f} F")
-    
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
