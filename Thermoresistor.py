@@ -100,6 +100,9 @@ def update_temperature_and_threshold():
             print(f'Temperature (Celsius): {temperature_C:.2f}°C')
             print(f'Temperature (Fahrenheit): {temperature_F:.2f}°F')
 
+            # Turn on the LED if it's dark
+            GPIO.output(LED_PIN, GPIO.LOW if GPIO.input(LED_PIN) else GPIO.HIGH)
+
             # Check if temperature exceeds the threshold and alarm is on
             if alarm_on and temperature_C > temperature_threshold:
                 # Turn on the buzzer
@@ -118,7 +121,7 @@ def update_temperature_and_threshold():
             print(f'Alarm Status: {alarm_status}')
             print(f'Light Status: {"Dark" if GPIO.input(LED_PIN) else "Light"}')
 
-        time.sleep(15)  # Update temperature every 15 seconds
+        time.sleep(0.2) 
 
 def cleanup():
     # Turn off the buzzer
