@@ -101,7 +101,15 @@ def update_temperature_and_threshold():
             print(f'Temperature (Fahrenheit): {temperature_F:.2f}°F')
 
             # Turn on the LED if it's dark
-            GPIO.output(LED_PIN, GPIO.LOW if GPIO.input(LED_PIN) else GPIO.HIGH)
+            res_light = ADC2.getADC(0)  # Photoresistor connected to channel 0
+
+            # Check the light level and update the label
+            if res_light < 128:
+                # Turn on the LED when it's dark
+                GPIO.output(LED_PIN, GPIO.HIGH)
+            else:
+                # Turn off the LED when it's light
+                GPIO.output(LED_PIN, GPIO.LOW)
 
             # Check if temperature exceeds the threshold and alarm is on
             if alarm_on and temperature_C > temperature_threshold:
